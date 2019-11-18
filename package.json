@@ -1,0 +1,16 @@
+{
+  "name": "2100-auction-registry",
+  "license": "UNLICENSED",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ citizenhex/2100-auction-registry",
+    "create-local": "graph create --node http://localhost:8020/ citizenhex/2100-auction-registry",
+    "remove-local": "graph remove --node http://localhost:8020/ citizenhex/2100-auction-registry",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 citizenhex/2100-auction-registry"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "0.16.2",
+    "@graphprotocol/graph-ts": "0.16.0"
+  }
+}
