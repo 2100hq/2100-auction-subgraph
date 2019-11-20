@@ -15,12 +15,13 @@ export function handleBlock(block: EthereumBlock):void{
     reg = new Registry('Registry')
   }
 
-  let contract = Contract.bind(Address.fromString('0'))
-  reg.length = contract.stringsLength()
+  reg.length = BigInt.fromI32(0)
+  // let contract = Contract.bind(Address.fromString('0'))
+  // reg.length = contract.stringsLength()
 
-  for(let i=BigInt.fromI32(0); i < reg.length; i = i.plus(BigInt.fromI32(1))){
-    reg.strings.push(contract.strings(i))
-  }
+  // for(let i=BigInt.fromI32(0); i < reg.length; i = i.plus(BigInt.fromI32(1))){
+  //   reg.strings.push(contract.strings(i))
+  // }
 
   reg.save()
 
