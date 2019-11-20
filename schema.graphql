@@ -4,3 +4,15 @@ type ExampleEntity @entity {
   _string: String! # string
   _address: Bytes! # address
 }
+
+type Registry @entity {
+  id: ID!
+  length: BigInt!
+  strings:[String!] 
+}
+
+type Auction @entity {
+  id:ID!
+  name:String!
+  index:BigInt!
+}

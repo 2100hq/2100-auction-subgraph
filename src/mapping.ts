@@ -1,6 +1,37 @@
-import { BigInt } from "@graphprotocol/graph-ts"
+import { Address,log,BigInt, json,EthereumBlock } from "@graphprotocol/graph-ts"
 import { Contract, Create } from "../generated/Contract/Contract"
-import { ExampleEntity } from "../generated/schema"
+import { ExampleEntity, Registry } from "../generated/schema"
+
+// export function handleBlockWithCallToContract(block: EthereumBlock):void{
+//   log.info('contract call',[block.hash.toString()])
+// }
+
+export function handleBlock(block: EthereumBlock):void{
+  log.info('new block',[block.hash.toHexString()])
+
+  let reg = Registry.load('Registry')
+
+  if (reg == null) {
+    reg = new Registry('Registry')
+  }
+
+  let contract = Contract.bind(Address.fromString('0'))
+  reg.length = contract.stringsLength()
+
+  for(let i=BigInt.fromI32(0); i < reg.length; i = i.plus(BigInt.fromI32(1))){
+    reg.strings.push(contract.strings(i))
+  }
+
+  reg.save()
+
+  let entity = ExampleEntity.load(block.hash.toHex())
+  
+  if (entity == null) {
+    entity = new ExampleEntity(block.hash.toHex())
+  }
+  entity.count = BigInt.fromI32(1)
+  entity.save()
+}
 
 export function handleCreate(event: Create): void {
   // Entities can be loaded from the store using a string ID; this ID
