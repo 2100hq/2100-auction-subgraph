@@ -7,10 +7,10 @@
     "deploy": "graph deploy --access-token=${TOKEN} --debug --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ david-hex/devauction",
     "create-local": "graph create --node http://localhost:8020/ citizenhex/2100-auction-registry",
     "remove-local": "graph remove --node http://localhost:8020/ citizenhex/2100-auction-registry",
-    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 citizenhex/2100-auction-registry"
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 citizenhex/2100-auction-registry",
+    "ver": "graph -v",
+    "which": "which graph"
   },
   "dependencies": {
-    "@graphprotocol/graph-cli": "0.16.2",
-    "@graphprotocol/graph-ts": "0.16.0"
   }
 }

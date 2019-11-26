@@ -1,18 +1,46 @@
-type ExampleEntity @entity {
-  id: ID!
-  count: BigInt!
-  _string: String! # string
-  _address: Bytes! # address
-}
 
 type Registry @entity {
   id: ID!
-  length: BigInt!
-  strings:[String!] 
+  length: BigInt! 
+  strings:[String!]!
+}
+
+type AuctionManager @entity {
+  id:ID!
+  name:String!
+  address:String!
+  currentIndex:Int!
 }
 
 type Auction @entity {
   id:ID!
+  auctionId:Int!
   name:String!
-  index:BigInt!
+  address:String!
+  isActive:Boolean!
+  isStopReached:Boolean!
+  startTime:BigInt! 
+  endTime:BigInt! 
+  secondsPassed:BigInt! 
+  secondsRemaining:BigInt! 
+  currentPrice:BigInt!
+  finalPrice:BigInt! 
+  deposits:BigInt!
+}
+
+type AuctionBalance @entity {
+  id:ID!
+  address:String!
+  auctionId:Int!
+  auctionName:String!
+  bids:BigInt!
+  available:BigInt!
+}
+
+type TokenBalance @entity {
+  id:ID!
+  address:String!
+  tokenAddress:String!
+  tokenName:String!
+  balance:BigInt!
 }

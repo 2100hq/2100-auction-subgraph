@@ -1,12 +1,43 @@
 specVersion: 0.0.2
 schema:
   file: ./schema.graphql
+templates:
+  - name: AuctionContract
+    kind: ethereum/contract
+    network: kovan
+    source:
+      abi: AuctionContract
+    mapping: 
+      kind: ethereum/events
+      apiVersion: 0.0.3
+      language: wasm/assemblyscript
+      file: ./src/mapping.ts
+      entities:
+        - AuctionContract
+        - AuctionBalance
+        - TokenBalance
+      abis:
+        - name: AuctionContract
+          file: ./abis/auction.json
+      eventHandlers:
+        - event: Bid(uint8,address,uint256)
+          handler: handleBid
+        - event: Start(uint8,uint256,uint256)
+          handler: handleStart
+        # - event: Transfer(indexed address,indexed address,uint256)
+        #   handler: handleTransfer
+      # callHandlers:
+        # - function: ClaimTokens(uint8,uint256)
+        #   handler: handleClaimTokens
 dataSources:
   - kind: ethereum/contract
     name: Contract
     network: kovan
     source:
-      address: "0x47Dfc7A9e17660727547BcE6e78d0082573Eee72"
+      # address: "0x47Dfc7A9e17660727547BcE6e78d0082573Eee72"
+      # address: "0x70f55027A37BA0BBC5499C272aBdE390781E21a6"
+      address: "0xd52E8A8d25082913E5E08455c9e2e53eF3301727"
+      # address: "0x3308a4c338a641726983Ff60F0312CeF4Aa17b67"
       abi: Contract
     mapping:
       kind: ethereum/events
@@ -16,11 +47,14 @@ dataSources:
         - ExampleEntity
         - Registry
         - Auction
+        - AuctionContract
       abis:
         - name: Contract
           file: ./abis/Contract.json
-      blockHandlers:
-        - handler: handleBlock
+        - name: AuctionContract
+          file: ./abis/auction.json
+      # blockHandlers:
+      #   - handler: handleBlock
       eventHandlers:
         - event: Create(string,address,address)
           handler: handleCreate
