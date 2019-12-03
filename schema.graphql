@@ -1,6 +1,8 @@
 
 type Registry @entity {
   id: ID!
+  name:String!
+  address:String!
   length: BigInt! 
   strings:[String!]!
 }
@@ -9,7 +11,7 @@ type AuctionManager @entity {
   id:ID!
   name:String!
   address:String!
-  currentIndex:Int!
+  currentAuctionId:Int!
 }
 
 type Auction @entity {
@@ -34,7 +36,7 @@ type AuctionBalance @entity {
   auctionId:Int!
   auctionName:String!
   bids:BigInt!
-  available:BigInt!
+  unclaimed:BigInt!
 }
 
 type TokenBalance @entity {

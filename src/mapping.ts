@@ -29,11 +29,15 @@ function updateAuctionState(auction:Auction,state:AuctionContract__getAuctionRes
   return auction
 }
 
+function getName(name:string): string{
+  return name.split(".")[0]
+}
+
 export function handleStart(event: Start): void {
 
   let contract = AuctionContract.bind(event.address)
 
-  let name = contract.name()
+  let name = getName(contract.name())
 
   let auctionState = contract.getAuction(event.params.auctionId)
 
@@ -43,14 +47,18 @@ export function handleStart(event: Start): void {
   auction.name = name
 
   auction = updateAuctionState(auction,auctionState)
-  // auction = updateAuctionStateFromContract(auction,event.params.auctionId,contract)
 
   auction.save()
+
+  let auctionManager = new AuctionManager(name)
+
+  auctionManager.currentAuctionId = contract.currentAuctionId()
+  auctionManager.save()
 }
 
 export function handleBid(event: Bid): void {
   let contract = AuctionContract.bind(event.address)
-  let name = contract.name()
+  let name = getName(contract.name())
 
   let auctionId  = BigInt.fromI32(event.params.auctionId).toString()
 
@@ -63,17 +71,20 @@ export function handleBid(event: Bid): void {
     auctionBalance = new AuctionBalance(auctionBalanceId)
     auctionBalance.address = event.params.sender.toHex()
     auctionBalance.bids = BigInt.fromI32(0)
-    auctionBalance.available = BigInt.fromI32(0)
+    auctionBalance.unclaimed = BigInt.fromI32(0)
     auctionBalance.auctionName = name
     auctionBalance.auctionId = event.params.auctionId
   }
   auctionBalance.bids = auctionBalance.bids + event.params.amount
   auctionBalance.save()
+
+  auction = updateAuctionState(auction,contract.getAuction(event.params.auctionId))
+  auction.save()
 }
 
 export function handleTransfer(event: Transfer) : void {
   let contract = AuctionContract.bind(event.address)
-  let name = contract.name()
+  let name = getName(contract.name())
 
   let tokenBalanceToId = event.params._to.toHex() + "!" + name 
   let tokenBalanceTo = TokenBalance.load(tokenBalanceToId)
@@ -83,6 +94,7 @@ export function handleTransfer(event: Transfer) : void {
     tokenBalanceTo.balance = BigInt.fromI32(0)
     tokenBalanceTo.tokenName = name
     tokenBalanceTo.address = event.params._to.toHex()
+    tokenBalanceTo.tokenAddress = event.address.toHex()
   }
 
   tokenBalanceTo.balance = tokenBalanceTo.balance + event.params._value
@@ -96,6 +108,7 @@ export function handleTransfer(event: Transfer) : void {
     tokenBalanceFrom.balance = BigInt.fromI32(0)
     tokenBalanceFrom.tokenName = name
     tokenBalanceFrom.address = event.params._to.toHex()
+    tokenBalanceFrom.tokenAddress = event.address.toHex()
   }
 
   tokenBalanceFrom.balance = tokenBalanceFrom.balance - event.params._value
@@ -107,7 +120,7 @@ export function handleClaimTokens(call: ClaimTokensCall) :void {
   let auctionId = call.inputs._auctionId
   let mybid = contract.getBid(auctionId,call.from)
   let currentPrice = contract.calcCurrentPrice(auctionId)
-  let name = contract.name()
+  let name = getName(contract.name())
 
   let tokenBalanceId = call.from.toHex() + "!" + name 
   let tokenBalance = TokenBalance.load(tokenBalanceId)
@@ -127,27 +140,25 @@ export function handleClaimTokens(call: ClaimTokensCall) :void {
   if(auctionBalance == null){
     auctionBalance = new AuctionBalance(auctionBalanceId)
     auctionBalance.address = call.from.toHex()
-    auctionBalance.bids = mybid
-    auctionBalance.available = BigInt.fromI32(0)
+    auctionBalance.bids = BigInt.fromI32(0)
     auctionBalance.auctionName = name
     auctionBalance.auctionId = auctionId
   }
 
-  auctionBalance.available = BigInt.fromI32(0)
   auctionBalance.save()
 
 }
 
-export function handleBlock(block: EthereumBlock): void{
-}
-
+let registryId = '0'
 export function handleCreate(event: Create): void {
-  let reg = Registry.load(event.address.toHex())
+  let reg = Registry.load(registryId)
 
   if (reg == null) {
-    reg = new Registry(event.address.toHex())
+    reg = new Registry(registryId)
     reg.length = BigInt.fromI32(0)
     reg.strings = new Array<string>()
+    reg.address = event.address.toHex()
+    reg.name = '2100 Auction Registry'
   }
 
   reg.length = reg.length + BigInt.fromI32(1)
@@ -160,17 +171,18 @@ export function handleCreate(event: Create): void {
 
   AuctionTemplate.create(event.params._address)
 
+  let auctionContract = AuctionContract.bind(event.params._address)
+
   let auctionManager = new AuctionManager(event.params._string)
 
   auctionManager.address = event.params._address.toHex()
-  auctionManager.name = event.params._string
-  auctionManager.currentIndex = 0
+  auctionManager.name = getName(auctionContract.name())
+  auctionManager.currentAuctionId = 0
   auctionManager.save()
 
-  let contract = AuctionContract.bind(event.params._address)
   let auction = new Auction(auctionManager.name + "!0")
 
-  let auctionState = contract.getAuction(0)
+  let auctionState = auctionContract.getAuction(0)
 
   auction.name = auctionManager.name
   auction.address = auctionManager.address
@@ -182,6 +194,35 @@ export function handleCreate(event: Create): void {
 
 
 }
+
+// based on blocks coming in. dont use.
+function updateAuction(name:string, index:i32,array:Array<string>):void{
+  let auctionManager = AuctionManager.load(name)
+
+
+  let amContract = AuctionContract.bind(Address.fromString(auctionManager.address))
+
+  let currentAuctionId = amContract.currentAuctionId()
+
+  let auctionState = amContract.getAuction(currentAuctionId)
+
+  let currentAuction = new Auction(name + "!" + BigInt.fromI32(currentAuctionId).toString())
+
+  currentAuction = updateAuctionState(currentAuction,auctionState)
+
+  currentAuction.save()
+
+}
+
+export function handleBlock(block: EthereumBlock): void{
+  log.warning('handleblock',[block.number.toString()])
+  let reg = Registry.load(registryId)
+  if(reg == null) return
+  reg.strings.forEach(updateAuction)
+
+
+}
+
 
 //export function handleCreate(event: Create): void {
 //  // Entities can be loaded from the store using a string ID; this ID

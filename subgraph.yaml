@@ -13,9 +13,14 @@ templates:
       language: wasm/assemblyscript
       file: ./src/mapping.ts
       entities:
+        - Auction
         - AuctionContract
         - AuctionBalance
         - TokenBalance
+        - Registry
+        - Bid
+        - Transfer
+        - Start
       abis:
         - name: AuctionContract
           file: ./abis/auction.json
@@ -24,11 +29,11 @@ templates:
           handler: handleBid
         - event: Start(uint8,uint256,uint256)
           handler: handleStart
-        # - event: Transfer(indexed address,indexed address,uint256)
-        #   handler: handleTransfer
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
       # callHandlers:
-        # - function: ClaimTokens(uint8,uint256)
-        #   handler: handleClaimTokens
+      #   - function: ClaimTokens(uint8,uint256)
+      #     handler: handleClaimTokens
 dataSources:
   - kind: ethereum/contract
     name: Contract
@@ -39,15 +44,17 @@ dataSources:
       address: "0xd52E8A8d25082913E5E08455c9e2e53eF3301727"
       # address: "0x3308a4c338a641726983Ff60F0312CeF4Aa17b67"
       abi: Contract
+      startBlock: 14980368
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.3
       language: wasm/assemblyscript
       entities:
-        - ExampleEntity
         - Registry
         - Auction
         - AuctionContract
+        - AuctionBalance
+        - TokenBalance
       abis:
         - name: Contract
           file: ./abis/Contract.json
