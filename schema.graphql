@@ -11,12 +11,18 @@ type AuctionManager @entity {
   id:ID!
   name:String!
   address:String!
-  currentAuctionId:Int!
+  currentAuctionId:BigInt!
+  maximumSupply:BigInt!
+  amount:BigInt!
+  duration:BigInt!
+  startPrice:BigInt!
+  endPrice:BigInt!
+  totalPriceChange:BigInt!
 }
 
 type Auction @entity {
   id:ID!
-  auctionId:Int!
+  auctionId:BigInt!
   name:String!
   address:String!
   isActive:Boolean!
@@ -33,10 +39,9 @@ type Auction @entity {
 type AuctionBalance @entity {
   id:ID!
   address:String!
-  auctionId:Int!
+  auctionId:BigInt!
   auctionName:String!
   bids:BigInt!
-  unclaimed:BigInt!
 }
 
 type TokenBalance @entity {

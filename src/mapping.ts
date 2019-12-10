@@ -3,10 +3,10 @@ import { Contract, Create } from "../generated/Contract/Contract"
 import {  Registry, AuctionManager, Auction, AuctionBalance, TokenBalance } from "../generated/schema"
 
 import {
-  ClaimTokensCall,
   Bid, 
   Transfer,
   Start,
+  Claim,
   AuctionContract,
   AuctionContract__getAuctionResult
 } from "../generated/templates/AuctionContract/AuctionContract"
@@ -41,7 +41,7 @@ export function handleStart(event: Start): void {
 
   let auctionState = contract.getAuction(event.params.auctionId)
 
-  let auction = new Auction(name + "!" + BigInt.fromI32(event.params.auctionId).toString())
+  let auction = new Auction(name + "!" + event.params.auctionId.toString())
 
   auction.address = event.address.toHex()
   auction.name = name
@@ -60,7 +60,7 @@ export function handleBid(event: Bid): void {
   let contract = AuctionContract.bind(event.address)
   let name = getName(contract.name())
 
-  let auctionId  = BigInt.fromI32(event.params.auctionId).toString()
+  let auctionId  = event.params.auctionId.toString()
 
   let auction = new Auction(name + "!" + auctionId)
 
@@ -71,10 +71,10 @@ export function handleBid(event: Bid): void {
     auctionBalance = new AuctionBalance(auctionBalanceId)
     auctionBalance.address = event.params.sender.toHex()
     auctionBalance.bids = BigInt.fromI32(0)
-    auctionBalance.unclaimed = BigInt.fromI32(0)
     auctionBalance.auctionName = name
     auctionBalance.auctionId = event.params.auctionId
   }
+  log.warning('new bid',[auctionBalance.bids,event.params.amount])
   auctionBalance.bids = auctionBalance.bids + event.params.amount
   auctionBalance.save()
 
@@ -115,38 +115,20 @@ export function handleTransfer(event: Transfer) : void {
   tokenBalanceFrom.save()
 }
 
-export function handleClaimTokens(call: ClaimTokensCall) :void {
-  let contract = AuctionContract.bind(call.to)
-  let auctionId = call.inputs._auctionId
-  let mybid = contract.getBid(auctionId,call.from)
+export function handleClaimTokens(event: Claim) :void {
+  let contract = AuctionContract.bind(event.address)
+  let auctionId = event.params.auctionId
   let currentPrice = contract.calcCurrentPrice(auctionId)
   let name = getName(contract.name())
 
-  let tokenBalanceId = call.from.toHex() + "!" + name 
-  let tokenBalance = TokenBalance.load(tokenBalanceId)
-
-  if(tokenBalance == null){
-    tokenBalance = new TokenBalance(tokenBalanceId)
-    tokenBalance.balance = BigInt.fromI32(0)
-    tokenBalance.tokenName = name
-    tokenBalance.address = call.from.toHex()
-  }
-  tokenBalance.balance = tokenBalance.balance + mybid / currentPrice
-  tokenBalance.save()
-
-  let auctionBalanceId = call.from.toHex() + "!" + name + "!" + BigInt.fromI32(auctionId).toString()
+  let auctionBalanceId = event.params._to.toHex() + "!" + name + "!" + auctionId.toString()
   let auctionBalance = AuctionBalance.load(auctionBalanceId)
-
-  if(auctionBalance == null){
-    auctionBalance = new AuctionBalance(auctionBalanceId)
-    auctionBalance.address = call.from.toHex()
-    auctionBalance.bids = BigInt.fromI32(0)
-    auctionBalance.auctionName = name
-    auctionBalance.auctionId = auctionId
-  }
-
+  auctionBalance.bids = BigInt.fromI32(0)
   auctionBalance.save()
 
+  let auction = new Auction(name + "!" + auctionId.toString())
+  auction = updateAuctionState(auction,contract.getAuction(auctionId))
+  auction.save()
 }
 
 let registryId = '0'
@@ -177,12 +159,18 @@ export function handleCreate(event: Create): void {
 
   auctionManager.address = event.params._address.toHex()
   auctionManager.name = getName(auctionContract.name())
-  auctionManager.currentAuctionId = 0
+  auctionManager.currentAuctionId = BigInt.fromI32(0)
+  auctionManager.maximumSupply = auctionContract.MAXIMUM_SUPPLY()
+  auctionManager.amount = auctionContract.AUCTION_AMOUNT()
+  auctionManager.duration = auctionContract.AUCTION_DURATION()
+  auctionManager.startPrice = auctionContract.AUCTION_START_PRICE()
+  auctionManager.endPrice = auctionContract.AUCTION_END_PRICE()
+  auctionManager.totalPriceChange = auctionContract.AUCTION_START_PRICE() - auctionContract.AUCTION_END_PRICE()
   auctionManager.save()
 
   let auction = new Auction(auctionManager.name + "!0")
 
-  let auctionState = auctionContract.getAuction(0)
+  let auctionState = auctionContract.getAuction(BigInt.fromI32(0))
 
   auction.name = auctionManager.name
   auction.address = auctionManager.address
@@ -206,7 +194,7 @@ function updateAuction(name:string, index:i32,array:Array<string>):void{
 
   let auctionState = amContract.getAuction(currentAuctionId)
 
-  let currentAuction = new Auction(name + "!" + BigInt.fromI32(currentAuctionId).toString())
+  let currentAuction = new Auction(name + "!" + currentAuctionId.toString())
 
   currentAuction = updateAuctionState(currentAuction,auctionState)
 

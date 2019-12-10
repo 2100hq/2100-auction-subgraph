@@ -21,16 +21,19 @@ templates:
         - Bid
         - Transfer
         - Start
+        - Claim
       abis:
         - name: AuctionContract
           file: ./abis/auction.json
       eventHandlers:
-        - event: Bid(uint8,address,uint256)
+        - event: Bid(uint256,address,uint256)
           handler: handleBid
-        - event: Start(uint8,uint256,uint256)
+        - event: Start(uint256,uint256,uint256)
           handler: handleStart
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
+        - event: Claim(uint256,indexed address,uint256)
+          handler: handleClaimTokens
       # callHandlers:
       #   - function: ClaimTokens(uint8,uint256)
       #     handler: handleClaimTokens
@@ -41,10 +44,11 @@ dataSources:
     source:
       # address: "0x47Dfc7A9e17660727547BcE6e78d0082573Eee72"
       # address: "0x70f55027A37BA0BBC5499C272aBdE390781E21a6"
-      address: "0xd52E8A8d25082913E5E08455c9e2e53eF3301727"
+      # address: "0xd52E8A8d25082913E5E08455c9e2e53eF3301727"
       # address: "0x3308a4c338a641726983Ff60F0312CeF4Aa17b67"
+      address: "0x8fBC76f664ccF77D93D2e4F25D37a995379774B7"
       abi: Contract
-      startBlock: 14980368
+      startBlock: 15233386
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.3
