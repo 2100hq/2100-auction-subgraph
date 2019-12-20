@@ -4,7 +4,7 @@ schema:
 templates:
   - name: AuctionContract
     kind: ethereum/contract
-    network: kovan
+    network: goerli
     source:
       abi: AuctionContract
     mapping: 
@@ -21,24 +21,24 @@ templates:
         - BidBurn
         - Balance
         - Transfer
-        - Start
+        - StartAuction
         - Claim
         - Stat
       abis:
         - name: AuctionContract
           file: ./abis/auction.json
       eventHandlers:
-        - event: Bid(uint256,address,uint256)
+        - event: Bid(indexed uint256,address,uint256)
           handler: handleBid
-        - event: Start(uint256,uint256,uint256)
+        - event: StartAuction(indexed uint256,uint256,uint256)
           handler: handleStart
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
-        - event: Claim(uint256,indexed address,uint256)
+        - event: Claim(indexed uint256,indexed address,uint256)
           handler: handleClaimTokens
-        - event: BidBurn(indexed address,uint256)
+        - event: BidBurn(indexed uint256,uint256)
           handler: handleBurn
-        - event: BidDonate(indexed address,uint256)
+        - event: BidDonate(indexed uint256,uint256)
           handler: handleDonate
       # callHandlers:
       #   - function: ClaimTokens(uint8,uint256)
@@ -46,11 +46,12 @@ templates:
 dataSources:
   - kind: ethereum/contract
     name: RegistryContract
-    network: kovan
+    network: goerli
     source:
-      address: "0xa623Ddf7b1D79baADE582F9a4558a430E6fe9395"
+      # address: "0xa623Ddf7b1D79baADE582F9a4558a430E6fe9395"
+      address: "0xc7a933665971c59857744ee89418e552807cf4c3"
       abi: RegistryContract
-      startBlock: 15367397
+      startBlock: 1855769
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.3

@@ -41,6 +41,7 @@ type Auction @entity {
 type Bid @entity {
   id:ID!
   address:String!
+  tokenAddress:String!
   auctionId:BigInt!
   name:String!
   amount:BigInt!

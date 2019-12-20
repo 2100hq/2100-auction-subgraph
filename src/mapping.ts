@@ -7,7 +7,7 @@ import {
   BidDonate,
   BidBurn,
   Transfer,
-  Start,
+  StartAuction,
   Claim,
   AuctionContract,
   AuctionContract__getAuctionResult
@@ -20,12 +20,11 @@ function updateAuctionState(auction:Auction,state:AuctionContract__getAuctionRes
   auction.auctionId = state.value0
   // auction.auctionId = 0
   auction.isActive = state.value1
-  // auction.isStopReached = state.value2
-  auction.startTime = state.value3
-  auction.endTime = state.value4
-  auction.secondsPassed = state.value5
-  auction.secondsRemaining = state.value6
-  auction.deposits = state.value7
+  auction.startTime = state.value2
+  auction.endTime = state.value3
+  auction.secondsPassed = state.value4
+  auction.secondsRemaining = state.value5
+  auction.deposits = state.value6
   return auction
 }
 
@@ -33,7 +32,7 @@ function getName(name:string): string{
   return name.split(".")[0]
 }
 
-export function handleStart(event: Start): void {
+export function handleStart(event: StartAuction): void {
 
   let contract = AuctionContract.bind(event.address)
 
@@ -87,6 +86,7 @@ export function handleBid(event: BidEvent): void {
     bid.claim = BigInt.fromI32(0)
     bid.name = name
     bid.auctionId = event.params.auctionId
+    bid.tokenAddress = event.address.toHex()
 
     //new bid requires pushing into auction array
     bidids.push(bid.id)
