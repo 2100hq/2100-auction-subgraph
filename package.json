@@ -5,15 +5,13 @@
     "codegen": "graph codegen",
     "build": "graph build",
     "deploy": "graph deploy --access-token=${TOKEN} --debug --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ david-hex/devauction",
-    "create-private": "graph create --node http://10.136.251.204:8020/ citizenhex/2100-auction-registry",
-    "remove-private": "graph remove --node http://10.136.251.204:8020/ citizenhex/2100-auction-registry",
-    "deploy-private": "graph deploy --node http://10.136.251.204:8020/ --ipfs http://10.136.251.204:5001 citizenhex/2100-auction-registry",
+    "create-private": "graph create --node ${PRIVATE}:8020 citizenhex/2100-auction-registry",
+    "remove-private": "graph remove --node ${PRIVATE}:8020 citizenhex/2100-auction-registry",
+    "deploy-private": "graph deploy --node ${PRIVATE}:8020 --ipfs ${PRIVATE}:5001 citizenhex/2100-auction-registry",
     "create-local": "graph create --node http://localhost:8020/ citizenhex/2100-auction-registry",
     "remove-local": "graph remove --node http://localhost:8020/ citizenhex/2100-auction-registry",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 citizenhex/2100-auction-registry",
     "ver": "graph -v",
     "which": "which graph"
-  },
-  "dependencies": {
   }
 }

@@ -1,9 +1,11 @@
 import { Address,log,BigInt, json,EthereumBlock } from "@graphprotocol/graph-ts"
 import { Contract, Create } from "../generated/Contract/Contract"
-import {  Registry, AuctionManager, Auction, AuctionBalance, TokenBalance } from "../generated/schema"
+import {  Registry, AuctionManager, Auction, Bid, Balance, Stat} from "../generated/schema"
 
 import {
-  Bid, 
+  Bid as BidEvent, 
+  BidDonate,
+  BidBurn,
   Transfer,
   Start,
   Claim,
@@ -18,14 +20,12 @@ function updateAuctionState(auction:Auction,state:AuctionContract__getAuctionRes
   auction.auctionId = state.value0
   // auction.auctionId = 0
   auction.isActive = state.value1
-  auction.isStopReached = state.value2
+  // auction.isStopReached = state.value2
   auction.startTime = state.value3
   auction.endTime = state.value4
   auction.secondsPassed = state.value5
   auction.secondsRemaining = state.value6
-  auction.currentPrice = state.value7
-  auction.finalPrice = state.value8
-  auction.deposits = state.value9
+  auction.deposits = state.value7
   return auction
 }
 
@@ -45,86 +45,108 @@ export function handleStart(event: Start): void {
 
   auction.address = event.address.toHex()
   auction.name = name
+  auction.bidids = new Array<string>()
 
   auction = updateAuctionState(auction,auctionState)
 
-  auction.save()
 
-  let auctionManager = new AuctionManager(name)
+  let auctionManager = AuctionManager.load(name)
 
   auctionManager.currentAuctionId = contract.currentAuctionId()
+
+  auction.amount = auctionManager.amount
+  auction.duration = auctionManager.duration
+
+  auction.save()
   auctionManager.save()
 }
 
-export function handleBid(event: Bid): void {
+export function handleBid(event: BidEvent): void {
   let contract = AuctionContract.bind(event.address)
   let name = getName(contract.name())
 
   let auctionId  = event.params.auctionId.toString()
 
-  let auction = new Auction(name + "!" + auctionId)
+  let auction = Auction.load(name + "!" + auctionId) as Auction
+  auction = updateAuctionState(auction as Auction,contract.getAuction(event.params.auctionId))
 
-  let auctionBalanceId = event.params.sender.toHex() + "!" + name + "!" + auctionId
-  let auctionBalance = AuctionBalance.load(auctionBalanceId)
+  // if(auction == null){
+  //   auction = new Auction(name + "!" + auctionId)
+  //   auction.bidids = new Array<string>()
+  // }
 
-  if(auctionBalance == null){
-    auctionBalance = new AuctionBalance(auctionBalanceId)
-    auctionBalance.address = event.params.sender.toHex()
-    auctionBalance.bids = BigInt.fromI32(0)
-    auctionBalance.auctionName = name
-    auctionBalance.auctionId = event.params.auctionId
+  let bidId = event.params.sender.toHex() + "!" + name + "!" + auctionId
+  let bid = Bid.load(bidId)
+
+  let bidids = auction.bidids
+
+  if(bid == null){
+    bid = new Bid(bidId)
+    bid.address = event.params.sender.toHex()
+    bid.amount = BigInt.fromI32(0)
+    bid.claim = BigInt.fromI32(0)
+    bid.name = name
+    bid.auctionId = event.params.auctionId
+
+    //new bid requires pushing into auction array
+    bidids.push(bid.id)
+    auction.bidids = bidids
   }
-  log.warning('new bid',[auctionBalance.bids,event.params.amount])
-  auctionBalance.bids = auctionBalance.bids + event.params.amount
-  auctionBalance.save()
 
-  auction = updateAuctionState(auction,contract.getAuction(event.params.auctionId))
+  bid.amount = bid.amount + event.params.amount
+  bid.save()
   auction.save()
+
+  for (let i = 0; i < bidids.length; ++i){
+    let bid = Bid.load(bidids[i]) as Bid
+    // log.warning('new bid',[auction.amount.toString(),bid.amount.toString(),auction.deposits.toString()])
+    bid.claim = (auction.amount * bid.amount) / auction.deposits
+    // log.warning('claim',[bid.claim.toString()])
+    bid.save()
+
+  }
+
+}
+
+function loadBalance(address:Address,name:string,tokenAddress:Address):Balance{
+  let id = address.toHex() + "!" + name 
+  let balance = Balance.load(id)
+
+  if(balance == null){
+    balance = new Balance(id)
+    balance.balance = BigInt.fromI32(0)
+    balance.name = name
+    balance.address = address.toHex()
+    balance.tokenAddress = address.toHex()
+  }
+
+  return balance as Balance
 }
 
 export function handleTransfer(event: Transfer) : void {
   let contract = AuctionContract.bind(event.address)
   let name = getName(contract.name())
 
-  let tokenBalanceToId = event.params._to.toHex() + "!" + name 
-  let tokenBalanceTo = TokenBalance.load(tokenBalanceToId)
+  let fromBalance = loadBalance(event.params._from,name,event.address)
+  let toBalance = loadBalance(event.params._to,name,event.address)
 
-  if(tokenBalanceTo == null){
-    tokenBalanceTo = new TokenBalance(tokenBalanceToId)
-    tokenBalanceTo.balance = BigInt.fromI32(0)
-    tokenBalanceTo.tokenName = name
-    tokenBalanceTo.address = event.params._to.toHex()
-    tokenBalanceTo.tokenAddress = event.address.toHex()
-  }
+  fromBalance.balance = fromBalance.balance - event.params._value
+  toBalance.balance = toBalance.balance + event.params._value
 
-  tokenBalanceTo.balance = tokenBalanceTo.balance + event.params._value
-  tokenBalanceTo.save()
-
-  let tokenBalanceFromId = event.params._from.toHex() + "!" + name 
-  let tokenBalanceFrom = TokenBalance.load(tokenBalanceFromId)
-
-  if(tokenBalanceFrom == null){
-    tokenBalanceFrom = new TokenBalance(tokenBalanceFromId)
-    tokenBalanceFrom.balance = BigInt.fromI32(0)
-    tokenBalanceFrom.tokenName = name
-    tokenBalanceFrom.address = event.params._to.toHex()
-    tokenBalanceFrom.tokenAddress = event.address.toHex()
-  }
-
-  tokenBalanceFrom.balance = tokenBalanceFrom.balance - event.params._value
-  tokenBalanceFrom.save()
+  fromBalance.save()
+  toBalance.save()
 }
 
 export function handleClaimTokens(event: Claim) :void {
   let contract = AuctionContract.bind(event.address)
   let auctionId = event.params.auctionId
-  let currentPrice = contract.calcCurrentPrice(auctionId)
   let name = getName(contract.name())
 
-  let auctionBalanceId = event.params._to.toHex() + "!" + name + "!" + auctionId.toString()
-  let auctionBalance = AuctionBalance.load(auctionBalanceId)
-  auctionBalance.bids = BigInt.fromI32(0)
-  auctionBalance.save()
+  let bidId = event.params._to.toHex() + "!" + name + "!" + auctionId.toString()
+  let bid = Bid.load(bidId)
+  // bid.amount = BigInt.fromI32(0)
+  bid.claim = BigInt.fromI32(0)
+  bid.save()
 
   let auction = new Auction(name + "!" + auctionId.toString())
   auction = updateAuctionState(auction,contract.getAuction(auctionId))
@@ -163,17 +185,17 @@ export function handleCreate(event: Create): void {
   auctionManager.maximumSupply = auctionContract.MAXIMUM_SUPPLY()
   auctionManager.amount = auctionContract.AUCTION_AMOUNT()
   auctionManager.duration = auctionContract.AUCTION_DURATION()
-  auctionManager.startPrice = auctionContract.AUCTION_START_PRICE()
-  auctionManager.endPrice = auctionContract.AUCTION_END_PRICE()
-  auctionManager.totalPriceChange = auctionContract.AUCTION_START_PRICE() - auctionContract.AUCTION_END_PRICE()
   auctionManager.save()
 
   let auction = new Auction(auctionManager.name + "!0")
 
   let auctionState = auctionContract.getAuction(BigInt.fromI32(0))
 
+  auction.bidids = new Array<string>()
   auction.name = auctionManager.name
   auction.address = auctionManager.address
+  auction.amount = auctionManager.amount
+  auction.duration = auctionManager.duration
 
   auction = updateAuctionState(auction,auctionState)
   // auction = updateAuctionStateFromContract(auction,0,contract)
@@ -183,6 +205,27 @@ export function handleCreate(event: Create): void {
 
 }
 
+export function handleBurn(event:BidBurn):void{
+  let stat = Stat.load('burned')
+  if(stat == null){
+    stat = new Stat('burned')
+    stat.amount = BigInt.fromI32(0)
+  }
+  stat.amount = stat.amount + event.params._value
+  stat.save()
+
+}
+
+export function handleDonate(event:BidDonate):void{
+  let stat = Stat.load('donated')
+  if(stat == null){
+    stat = new Stat('donated')
+    stat.amount = BigInt.fromI32(0)
+  }
+  stat.amount = stat.amount + event.params._value
+  stat.save()
+
+}
 // based on blocks coming in. dont use.
 function updateAuction(name:string, index:i32,array:Array<string>):void{
   let auctionManager = AuctionManager.load(name)
@@ -212,51 +255,3 @@ export function handleBlock(block: EthereumBlock): void{
 }
 
 
-//export function handleCreate(event: Create): void {
-//  // Entities can be loaded from the store using a string ID; this ID
-//  // needs to be unique across all entities of the same type
-//  let entity = ExampleEntity.load(event.transaction.from.toHex())
-
-//  // Entities only exist after they have been saved to the store;
-//  // `null` checks allow to create entities on demand
-//  if (entity == null) {
-//    entity = new ExampleEntity(event.transaction.from.toHex())
-
-//    // Entity fields can be set using simple assignments
-//    entity.count = BigInt.fromI32(0)
-//  }
-
-//  // BigInt and BigDecimal math are supported
-//  entity.count = entity.count + BigInt.fromI32(1)
-
-//  // Entity fields can be set based on event parameters
-//  entity._string = event.params._string
-//  entity._address = event.params._address
-
-//  // Entities can be written to the store with `.save()`
-//  entity.save()
-
-//  // Note: If a handler doesn't require existing field values, it is faster
-//  // _not_ to load the entity from the store. Instead, create it fresh with
-//  // `new Entity(...)`, set the fields that should be updated and save the
-//  // entity back to the store. Fields that were not set or unset remain
-//  // unchanged, allowing for partial updates to be applied.
-
-//  // It is also possible to access smart contracts from mappings. For
-//  // example, the contract that has emitted the event can be connected to
-//  // with:
-//  //
-//  // let contract = Contract.bind(event.address)
-//  //
-//  // The following functions can then be called on this contract to access
-//  // state variables and other data:
-//  //
-//  // - contract.name(...)
-//  // - contract.stringToAddress(...)
-//  // - contract.stringsLength(...)
-//  // - contract.version(...)
-//  // - contract.addressToString(...)
-//  // - contract.strings(...)
-//  // - contract.owner(...)
-//  // - contract.create(...)
-//}

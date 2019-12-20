@@ -7,6 +7,11 @@ type Registry @entity {
   strings:[String!]!
 }
 
+type Stat @entity {
+  id:ID!
+  amount:BigInt!
+}
+
 type AuctionManager @entity {
   id:ID!
   name:String!
@@ -15,39 +20,37 @@ type AuctionManager @entity {
   maximumSupply:BigInt!
   amount:BigInt!
   duration:BigInt!
-  startPrice:BigInt!
-  endPrice:BigInt!
-  totalPriceChange:BigInt!
 }
 
 type Auction @entity {
   id:ID!
   auctionId:BigInt!
   name:String!
+  amount:BigInt!
+  duration:BigInt!
   address:String!
   isActive:Boolean!
-  isStopReached:Boolean!
   startTime:BigInt! 
   endTime:BigInt! 
   secondsPassed:BigInt! 
   secondsRemaining:BigInt! 
-  currentPrice:BigInt!
-  finalPrice:BigInt! 
   deposits:BigInt!
+  bidids:[String!]!
 }
 
-type AuctionBalance @entity {
+type Bid @entity {
   id:ID!
   address:String!
   auctionId:BigInt!
-  auctionName:String!
-  bids:BigInt!
+  name:String!
+  amount:BigInt!
+  claim:BigInt!
 }
 
-type TokenBalance @entity {
+type Balance @entity {
   id:ID!
   address:String!
   tokenAddress:String!
-  tokenName:String!
+  name:String!
   balance:BigInt!
 }

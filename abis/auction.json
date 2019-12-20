@@ -81,20 +81,6 @@
     {
       "constant": true,
       "inputs": [],
-      "name": "AUCTION_START_PRICE",
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
       "name": "owner",
       "outputs": [
         {
@@ -142,20 +128,6 @@
         {
           "name": "",
           "type": "uint64"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "AUCTION_END_PRICE",
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256"
         }
       ],
       "payable": false,
@@ -293,6 +265,40 @@
         }
       ],
       "name": "Claim",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
+      "name": "BidBurn",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
+      "name": "BidDonate",
       "type": "event"
     },
     {
@@ -460,14 +466,6 @@
           "type": "uint256"
         },
         {
-          "name": "currentPrice",
-          "type": "uint256"
-        },
-        {
-          "name": "finalPrice",
-          "type": "uint256"
-        },
-        {
           "name": "deposits",
           "type": "uint256"
         }
@@ -520,30 +518,16 @@
     },
     {
       "constant": false,
-      "inputs": [],
+      "inputs": [
+        {
+          "name": "_donation",
+          "type": "uint256"
+        }
+      ],
       "name": "bid",
       "outputs": [],
       "payable": true,
       "stateMutability": "payable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "name": "_auctionId",
-          "type": "uint256"
-        }
-      ],
-      "name": "calcCurrentPrice",
-      "outputs": [
-        {
-          "name": "tokenPrice",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -566,13 +550,23 @@
         {
           "name": "_auctionId",
           "type": "uint256"
-        },
-        {
-          "name": "donation",
-          "type": "uint256"
         }
       ],
       "name": "claimTokens",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_auctionIds",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "batchClaimTokens",
       "outputs": [],
       "payable": false,
       "stateMutability": "nonpayable",
